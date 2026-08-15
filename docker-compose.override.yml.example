@@ -1,0 +1,4 @@
+services:
+  application:
+    environment:
+      JWT_SECRET: replace-with-a-random-32-plus-character-secret

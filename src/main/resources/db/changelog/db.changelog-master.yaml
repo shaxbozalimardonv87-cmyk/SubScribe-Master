@@ -1,0 +1,6 @@
+databaseChangeLog:
+  - include: { file: db/changelog/001-create-users.yaml }
+  - include: { file: db/changelog/002-create-subscriptions.yaml }
+  - include: { file: db/changelog/003-create-payment-history.yaml }
+  - include: { file: db/changelog/004-create-refresh-token.yaml }
+  - include: { file: db/changelog/005-create-shedlock.yaml }

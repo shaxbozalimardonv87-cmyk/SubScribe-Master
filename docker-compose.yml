@@ -1,0 +1,27 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: subscribe_master
+      POSTGRES_USER: ${DB_USERNAME:-subscribe}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-subscribe}
+    ports: [ "5432:5432" ]
+    volumes: [ postgres-data:/var/lib/postgresql/data ]
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USERNAME:-subscribe} -d subscribe_master" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  application:
+    build: .
+    depends_on:
+      postgres: { condition: service_healthy }
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/subscribe_master
+      DB_USERNAME: ${DB_USERNAME:-subscribe}
+      DB_PASSWORD: ${DB_PASSWORD:-subscribe}
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production-please-use-a-long-secret-key}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+    ports: [ "8080:8080" ]
+volumes:
+  postgres-data:
