@@ -1,57 +1,107 @@
 # SubScribe Master
 
-Subscription management REST API built with Java 21 and Spring Boot 3.5.
+**A Java backend for managing recurring subscriptions, payment history, and spending reports.**
 
-## Features
+Built with **Java 21 · Spring Boot 3.5 · PostgreSQL · Spring Security · JPA/Hibernate**. This portfolio project brings authentication, ownership checks, scheduled jobs, external API integration, and reporting into one REST API.
 
-- JWT access + refresh authentication
-- USER/ADMIN roles and owner-level authorization
-- Subscription CRUD with soft delete and optimistic locking
-- Pageable + JPA Specification filtering
-- Payment history and transactional payment simulation
-- CBU UZS currency conversion, cached with Caffeine and protected by a Resilience4j circuit breaker with last-known-rate
-  fallback
-- Daily payment reminder scheduler and notification strategy, both guarded by ShedLock so only one instance runs a job
-  at a time
-- Statistics (most expensive, monthly total, 6/12-month trend, category breakdown) and XLSX/CSV annual reports
-- Admin overview with system-wide most-used-services ranking
-- Liquibase migrations, OpenAPI/Swagger, validation, global exception handling
-- 30+ JUnit 5 + AssertJ unit tests covering the service and domain layer
+[Architecture notes](ARCHITECTURE.md) · [Application source](src/main/java/com/examplesubscribemaster) · [Tests](src/test/java/com/examplesubscribemaster)
 
-## Run
+## Highlights
 
-Requirements: Java 21, Maven 3.9+, Docker.
+| Area | Implementation |
+| --- | --- |
+| Authentication | JWT access and refresh tokens, USER/ADMIN roles |
+| Subscription management | CRUD, soft deletion, optimistic locking, pagination and JPA Specification filters |
+| Payments | Transactional payment simulation and payment history |
+| Currency conversion | CBU exchange rates, Caffeine caching, Resilience4j circuit breaker and last-known-rate fallback |
+| Background jobs | Payment reminders and exchange-rate refresh with ShedLock coordination |
+| Reporting | Spending statistics, 6/12-month trends, annual XLSX/CSV reports |
+| API documentation | OpenAPI/Swagger, validation and global exception handling |
+| Persistence | PostgreSQL with Liquibase migrations |
 
-```bash
-mvn clean test
-mvn clean package
-docker compose up --build
+## Architecture
+
+```text
+HTTP request → Controller / DTO → Service → JPA Repository → PostgreSQL
+                                  ├─ Currency API + cache / fallback
+                                  ├─ Report generation
+                                  └─ Scheduled reminders
 ```
 
-Swagger: `http://localhost:8080/swagger-ui.html`
-OpenAPI: `http://localhost:8080/v3/api-docs`
+Controllers handle HTTP requests; services coordinate application operations; repositories handle persistence. Dedicated packages cover security, currency conversion, notifications, mapping, and filtering. See [ARCHITECTURE.md](ARCHITECTURE.md) for the design.
 
-## Environment
+## Run locally
 
-`DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`, `JWT_ACCESS_MINUTES`, `SPRING_PROFILES_ACTIVE`. Never use the
-development JWT secret in production.
+### Docker Compose
 
-## Authentication flow
+Install Docker with Compose, then run:
 
-Register/login returns an access token and refresh token. Send `Authorization: Bearer <accessToken>` to protected
-endpoints. POST `/auth/refresh` with the refresh token to issue a new token pair.
+```bash
+git clone https://github.com/shaxbozalimardonv87-cmyk/SubScribe-Master.git
+cd SubScribe-Master
+export JWT_SECRET="$(openssl rand -base64 48)"
+docker compose -f docker-compose.yml up --build
+```
 
-## API
+The explicit Compose file uses the base configuration: PostgreSQL on host port **5432**, application on **8080**. The checked-in override changes the database host port to **5433** when running plain `docker compose up`; use the base command above for the setup shown here. Docker builds the application with Java 21.
 
-- POST `/auth/register`, `/auth/login`, `/auth/refresh`
-- POST/GET/GET by id/PUT/DELETE `/subscriptions`
-- POST `/subscriptions/{id}/payments`
-- GET `/statistics`, `/statistics/most-expensive`, `/statistics/monthly-expense`,
-  `/statistics/monthly-trend?months=6|12`
-- GET `/reports/annual?year=2026&format=xlsx|csv`
-- GET `/admin/statistics` (ADMIN only): users/subscriptions/total paid + top-used services ranking
+- Swagger UI: <http://localhost:8080/swagger-ui.html>
+- OpenAPI document: <http://localhost:8080/v3/api-docs>
 
-## Project structure
+Stop the local stack with `docker compose -f docker-compose.yml down`.
 
-Layered architecture: controller -> service -> repository -> entity, with dedicated security, client, currency,
-scheduler, notification, mapper and specification packages.
+### Java / Maven
+
+With Java 21, Maven 3.9+, and a running PostgreSQL database named `subscribe_master`:
+
+```bash
+export DB_URL=jdbc:postgresql://localhost:5432/subscribe_master
+export DB_USERNAME=subscribe
+export DB_PASSWORD=subscribe
+export JWT_SECRET="$(openssl rand -base64 48)"
+mvn spring-boot:run
+```
+
+Create the database and matching local credentials first, or start only the database with `docker compose -f docker-compose.yml up -d postgres`. Liquibase manages application tables.
+
+## API overview
+
+| Endpoint | Purpose |
+| --- | --- |
+| `POST /auth/register`, `/auth/login`, `/auth/refresh` | Register, sign in, refresh tokens |
+| `/subscriptions` and `/subscriptions/{id}` | Manage subscriptions |
+| `POST /subscriptions/{id}/payments` | Simulate and record a payment |
+| `GET /statistics` | Spending overview |
+| `GET /statistics/monthly-trend?months=6` | Monthly spending trend |
+| `GET /reports/annual?year=2026&format=xlsx` | Download annual report |
+| `GET /admin/statistics` | ADMIN-only overview |
+
+Register or sign in, then use `Authorization: Bearer <accessToken>` for protected endpoints. Swagger contains the request schemas and full endpoint list.
+
+## Configuration
+
+| Variable | Purpose |
+| --- | --- |
+| `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` | PostgreSQL connection |
+| `JWT_SECRET` | Signing key; provide your own value |
+| `JWT_ACCESS_MINUTES` | Access token lifetime; default 15 minutes |
+| `PORT` | HTTP port; default 8080 |
+| `SPRING_PROFILES_ACTIVE` | Active Spring profile |
+
+## Tests
+
+```bash
+mvn test
+```
+
+JUnit tests cover authentication, subscriptions, payments, currency conversion, statistics, reminders, and domain behavior. This documentation update did not execute the test suite.
+
+## Scope
+
+Payments are simulated; this is not a live payment gateway. The email notifier is an extension point and has no email provider configured. Local default database credentials are for development; use separate credentials and a unique JWT key for deployment.
+
+## Author
+
+**Shahbozjon Alimardonov** — Java Backend Developer
+
+[GitHub](https://github.com/shaxbozalimardonv87-cmyk) · [LinkedIn](https://www.linkedin.com/in/shaxboz-alimardonov-774303381/) · [Email](mailto:shaxbozalimardonv87@gmail.com)
