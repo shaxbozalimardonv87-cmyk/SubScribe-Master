@@ -1,0 +1,36 @@
+name: Java CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: subscribe_master
+          POSTGRES_USER: subscribe
+          POSTGRES_PASSWORD: ci-test-only
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U subscribe -d subscribe_master"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DB_URL: jdbc:postgresql://localhost:5432/subscribe_master
+      DB_USERNAME: subscribe
+      DB_PASSWORD: ci-test-only
+      JWT_SECRET: ci-only-signing-key-for-automated-tests-not-for-deployment-123456789
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Build and run tests
+        run: mvn --batch-mode --no-transfer-progress verify

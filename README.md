@@ -1,5 +1,7 @@
 # SubScribe Master
 
+[![Java CI](https://github.com/shaxbozalimardonv87-cmyk/SubScribe-Master/actions/workflows/java-ci.yml/badge.svg)](https://github.com/shaxbozalimardonv87-cmyk/SubScribe-Master/actions/workflows/java-ci.yml)
+
 **A Java backend for managing recurring subscriptions, payment history, and spending reports.**
 
 Built with **Java 21 · Spring Boot 3.5 · PostgreSQL · Spring Security · JPA/Hibernate**. This portfolio project brings authentication, ownership checks, scheduled jobs, external API integration, and reporting into one REST API.
